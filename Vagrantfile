@@ -5,7 +5,7 @@ $domain = "example.com"
 $domain_ip_address = "192.168.56.2"
 
 Vagrant.configure("2") do |config|
-    config.vm.box = "windows-2022-amd64"
+    config.vm.box = "StefanScherer/windows_2022"
     config.vm.define "windows-domain-controller"
     config.vm.hostname = "dc"
 
@@ -28,15 +28,15 @@ Vagrant.configure("2") do |config|
 
     config.vm.provider :virtualbox do |v, override|
         v.linked_clone = true
-        v.cpus = 2
+        v.cpus = 1
         v.memory = 2048
         v.customize ["modifyvm", :id, "--clipboard-mode", "bidirectional"]
-        v.customize ["storageattach", :id,
-                        "--storagectl", "SATA Controller",
-                        "--device", "0",
-                        "--port", "1",
-                        "--type", "dvddrive",
-                        "--medium", "emptydrive"]
+        # v.customize ["storageattach", :id,
+        #                 "--storagectl", "SATA Controller",
+        #                 "--device", "0",
+        #                 "--port", "1",
+        #                 "--type", "dvddrive",
+        #                 "--medium", "emptydrive"]
     end
 
     config.vm.provider :hyperv do |hv, config|
@@ -86,23 +86,28 @@ Vagrant.configure("2") do |config|
         libvirt__dhcp_enabled: false,
         hyperv__bridge: "windows-domain-controller"
 
-    config.vm.provision "shell", path: "provision/ps.ps1", args: ["configure-hyperv-guest.ps1", $domain_ip_address]
-    config.vm.provision "shell", path: "provision/ps.ps1", args: ["domain-controller.ps1", $domain]
-    config.vm.provision "shell", reboot: true
-    config.vm.provision "shell", path: "provision/ps.ps1", args: "domain-controller-wait-for-ready.ps1"
-    config.vm.provision "shell", path: "provision/ps.ps1", args: "set-vagrant-domain-admin.ps1"
-    config.vm.provision "shell", path: "provision/ps.ps1", args: "domain-controller-configure.ps1"
-    config.vm.provision "shell", inline: "$env:chocolateyVersion='1.2.1'; Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')", name: "Install Chocolatey"
-    config.vm.provision "shell", path: "provision/ps.ps1", args: "provision-base.ps1"
-    config.vm.provision "shell", reboot: true
-    config.vm.provision "shell", path: "provision/ps.ps1", args: "domain-controller-wait-for-ready.ps1"
+    config.vm.network "forwarded_port", guest: 536, host: 1536
+    config.vm.network "forwarded_port", guest: 389, host: 1389
+
+    # config.vm.provision "shell", path: "provision/ps.ps1", args: ["configure-hyperv-guest.ps1", $domain_ip_address]
+    # config.vm.provision "shell", path: "provision/ps.ps1", args: ["domain-controller.ps1", $domain]
+    # config.vm.provision "shell", reboot: true
+    # config.vm.provision "shell", path: "provision/ps.ps1", args: "domain-controller-wait-for-ready.ps1"
+    # config.vm.provision "shell", path: "provision/ps.ps1", args: "set-vagrant-domain-admin.ps1"
+    # config.vm.provision "shell", path: "provision/ps.ps1", args: "domain-controller-configure.ps1"
+    # config.vm.provision "shell", inline: "$env:chocolateyVersion='1.2.1'; Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')", name: "Install Chocolatey"
+    # config.vm.provision "shell", path: "provision/ps.ps1", args: "provision-base.ps1"
+    # config.vm.provision "shell", reboot: true
+
+    # config.vm.provision "shell", path: "provision/ps.ps1", args: "domain-controller-wait-for-ready.ps1"
     # TODO after https://github.com/FriedrichWeinmann/GPOTools/issues/5#issuecomment-781598022 is fixed use ps.ps1 to call provision-gpos.ps1.
-    config.vm.provision "shell", inline: "cd c:/vagrant/provision; ./provision-gpos.ps1"
-    config.vm.provision "shell", path: "provision/ps.ps1", args: "ad-explorer.ps1"
-    config.vm.provision "shell", path: "provision/ps.ps1", args: "ca.ps1"
-    config.vm.provision "shell", reboot: true
-    config.vm.provision "shell", path: "provision/ps.ps1", args: "provision-winrm-https-listener.ps1"
-    config.vm.provision "shell", path: "provision/ps.ps1", args: "provision-msys2.ps1"
+    # config.vm.provision "shell", inline: "cd c:/vagrant/provision; ./provision-gpos.ps1"
+    # config.vm.provision "shell", path: "provision/ps.ps1", args: "ad-explorer.ps1"
+    # config.vm.provision "shell", path: "provision/ps.ps1", args: "ca.ps1"
+    # config.vm.provision "shell", reboot: true
+    # config.vm.provision "shell", path: "provision/ps.ps1", args: "provision-winrm-https-listener.ps1"
+    # config.vm.provision "shell", path: "provision/ps.ps1", args: "provision-msys2.ps1"
+
     config.vm.provision "shell", path: "provision/ps.ps1", args: "provision-firewall.ps1"
-    config.vm.provision "shell", path: "provision/ps.ps1", args: "summary.ps1"
+    # config.vm.provision "shell", path: "provision/ps.ps1", args: "summary.ps1"
 end
